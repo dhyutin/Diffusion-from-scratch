@@ -75,15 +75,16 @@ from torchvision.utils import make_grid
 def save_video(samples_dict, T, filename="ddpm_samples.mp4", fps=30):
     frames = []
 
-    for t in range(T):
-        if t in samples_dict:
-            grid = make_grid(samples_dict[t], nrow=4, normalize=True, scale_each=True)
-            # Replace NaN/inf with valid values, then clamp to [0, 1]
-            grid = torch.nan_to_num(grid, nan=0.0, posinf=1.0, neginf=0.0)
-            grid = torch.clamp(grid, 0, 1)
-            frame = (grid.permute(1, 2, 0).cpu().numpy() * 255).astype(np.uint8)
-            frames.append(frame)
+    sorted_steps = sorted(samples_dict.keys(), reverse=True)
 
-    print(f"[INFO] Writing video to {filename} ...")
-    imageio.mimsave(filename, frames, fps=fps)
+    for t in sorted_steps:
+        grid = make_grid(samples_dict[t], nrow=2, padding=4, normalize=False)
+        grid = torch.nan_to_num(grid, nan=0.0, posinf=1.0, neginf=0.0)
+        grid = torch.clamp(grid, 0, 1)
+
+        frame = (grid.permute(1, 2, 0).cpu().numpy() * 255).astype(np.uint8)
+        frames.append(frame)
+
+    print(f"[INFO] Writing video with {len(frames)} frames to {filename} ...")
+    imageio.mimsave(filename, frames, fps=fps, codec='libx264', quality=8, pixelformat='yuv420p')
     print(f"[INFO] Saved video to {filename}")

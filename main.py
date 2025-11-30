@@ -29,7 +29,7 @@ def main():
     # ---- Load from checkpoint if available ----
     # load_from = ""
     num = 100
-    load_path = f"ddpm_final_epoch.pth"   # <--- change to the checkpoint you want
+    load_path = f"ddpm_final_epoch.pth"   
     flag = 0
     try:
         checkpoint = torch.load(load_path, map_location=device)
@@ -83,10 +83,10 @@ def main():
         model, T,
         num_images=4,
         img_size=64,
-        save_every=10
+        save_every=5  
     )
     # show_progress(samples_dict)
-    save_video(samples_dict, T)
+    save_video(samples_dict, T, fps=20)  
 
 if __name__ == "__main__":
     main()
