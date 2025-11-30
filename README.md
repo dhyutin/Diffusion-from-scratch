@@ -3,7 +3,7 @@
 A from-scratch implementation of the methods described in the **DDPM paper**:  
 https://arxiv.org/pdf/2006.11239
 
-A minimal, modular implementation for training and sampling from a Denoising Diffusion Probabilistic Model.
+A minimal implementation for training and sampling from a Denoising Diffusion Probabilistic Model.
 
 ---
 
@@ -23,3 +23,6 @@ change the hyperparameter as per your wish and run:
 ```bash
 python main.py
 ```
+
+---
+# Sample Output

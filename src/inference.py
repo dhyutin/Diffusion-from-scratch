@@ -2,9 +2,14 @@
 
 import torch
 
-@torch.no_grad()
-def p_sample(model, x_t, t):
 
+device = "cuda"
+
+@torch.no_grad()
+def p_sample(model, x_t, t, T):
+    betas = torch.linspace(0.0001, 0.02, T).to(device)
+    alphas = (1 - betas).to(device)
+    alpha_bar = torch.cumprod(alphas, dim=0).to(device)
     beta_t = betas[t]
     alpha_t = alphas[t]
     alpha_bar_t = alpha_bar[t]
@@ -27,13 +32,13 @@ def p_sample(model, x_t, t):
 
 
 @torch.no_grad()
-def sample_images_progress(model, num_images=1, img_size=64, save_every=10):
+def sample_images_progress(model, T, num_images=1, img_size=64, save_every=10):
     x = torch.randn(num_images, 3, img_size, img_size).to(device)
 
     all_samples = {}  # to store step → image
 
     for step in reversed(range(T)):   # T → 0
-        x = p_sample(model, x, step)
+        x = p_sample(model, x, step, T)
 
         if step % save_every == 0 or step == 0:   # save at intervals
             # convert from [-1,1] to [0,1]
@@ -43,7 +48,7 @@ def sample_images_progress(model, num_images=1, img_size=64, save_every=10):
     return all_samples
 
 
-def show_progress(samples_dict):
+def show_progress(samples_dict, T):
     for step, imgs in sorted(samples_dict.items(), reverse=True):
         grid = vutils.make_grid(imgs, nrow=2)
         plt.figure(figsize=(6,6))
@@ -63,41 +68,19 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 import torchvision.utils as vutils
 
-def save_video(samples_dict, filename="diffusion_progress.mp4", fps=10):
+import imageio
+import numpy as np
+from torchvision.utils import make_grid
+
+def save_video(samples_dict, T, filename="ddpm_samples.mp4", fps=30):
     frames = []
 
-    # optional: choose a font (default works too)
-    try:
-        font = ImageFont.truetype("arial.ttf", 32)
-    except:
-        font = ImageFont.load_default()
+    for t in range(T):
+        if t in samples_dict:
+            grid = make_grid(samples_dict[t], nrow=4, normalize=True, scale_each=True)
+            frame = (grid.permute(1, 2, 0).cpu().numpy() * 255).astype(np.uint8)
+            frames.append(frame)
 
-    # sorted from T → 0
-    for step, imgs in sorted(samples_dict.items(), reverse=True):
-        # make grid
-        grid = vutils.make_grid(imgs, nrow=2)
-
-        # convert tensor → numpy
-        frame = (grid.permute(1,2,0).numpy() * 255).astype(np.uint8)
-
-        # convert to PIL image
-        pil_img = Image.fromarray(frame)
-
-        # create drawable layer
-        draw = ImageDraw.Draw(pil_img)
-
-        # Add text "step = XXX"
-        draw.text(
-            (10, 10),                   # position
-            f"step = {step}",           # text
-            fill=(255, 255, 255),       # white text
-            font=font
-        )
-
-        # convert back to numpy
-        frames.append(np.array(pil_img))
-
-    # save the video
+    print(f"[INFO] Writing video to {filename} ...")
     imageio.mimsave(filename, frames, fps=fps)
-    print(f"Saved video to {filename}")
-
+    print(f"[INFO] Saved video to {filename}")
