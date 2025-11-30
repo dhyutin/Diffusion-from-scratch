@@ -78,6 +78,7 @@ def save_video(samples_dict, T, filename="ddpm_samples.mp4", fps=30):
     for t in range(T):
         if t in samples_dict:
             grid = make_grid(samples_dict[t], nrow=4, normalize=True, scale_each=True)
+            grid = torch.clamp(grid, 0, 1)
             frame = (grid.permute(1, 2, 0).cpu().numpy() * 255).astype(np.uint8)
             frames.append(frame)
 
