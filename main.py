@@ -15,9 +15,9 @@ def main():
     model = nn.DataParallel(model)
 
     # Hyperparameters
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.00005)
     loss_fn = nn.MSELoss()
-    BATCH_SIZE=1
+    BATCH_SIZE=4
     num_epochs = 20
     T = 1000
 

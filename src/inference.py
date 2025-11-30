@@ -48,7 +48,7 @@ def sample_images_progress(model, T, num_images=1, img_size=64, save_every=10):
 def save_video(samples_dict, T, filename="ddpm_samples.mp4", fps=30):
     frames = []
 
-    sorted_steps = sorted(samples_dict.keys(), reverse=False)
+    sorted_steps = sorted(samples_dict.keys(), reverse=True)
 
     for t in sorted_steps:
         grid = make_grid(samples_dict[t], nrow=2, padding=4, normalize=False)

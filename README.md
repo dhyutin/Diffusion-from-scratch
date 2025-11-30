@@ -26,3 +26,5 @@ python main.py
 
 ---
 # Sample Output
+
+<video controls src="ddpm_samples.mp4" title="Title"></video>
