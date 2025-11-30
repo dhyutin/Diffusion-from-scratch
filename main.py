@@ -2,7 +2,7 @@
 from src.forward_process import sample_time_steps, forward_diffusion, show_images
 from src.reverse_process_architecture import ResBlock, UNet
 from src.load_sketch_data import data_loaders
-from src.inference import show_progress, sample_images_progress, save_video
+from src.inference import sample_images_progress, save_video
 import torch.nn as nn
 import torch
 
@@ -15,10 +15,10 @@ def main():
     model = nn.DataParallel(model)
 
     # Hyperparameters
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
     loss_fn = nn.MSELoss()
-    BATCH_SIZE=16
-    num_epochs = 100
+    BATCH_SIZE=1
+    num_epochs = 20
     T = 1000
 
     # Load data
