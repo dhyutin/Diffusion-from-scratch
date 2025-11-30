@@ -26,5 +26,4 @@ python main.py
 
 ---
 # Sample Output
-
-<video controls src="ddpm_samples.mp4" title="Title"></video>
+check https://github.com/dhyutin/Diffusion-from-scratch/blob/main/ddpm_samples.mp4
