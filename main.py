@@ -7,6 +7,30 @@ import torch.nn as nn
 import torch
 import random
 import os
+import re
+
+# this one function is from chatGPT cause I'm too excited to make it work before I code it out :))
+def get_latest_checkpoint(prefix="conditional_ddpm_epoch_", suffix=".pth"):
+
+    files = [f for f in os.listdir(".") if f.startswith(prefix) and f.endswith(suffix)]
+    if not files:
+        return None, 0
+
+    # Extract epoch number using regex
+    pattern = re.compile(rf"{prefix}(\d+){suffix}")
+    epochs = []
+
+    for f in files:
+        match = pattern.match(f)
+        if match:
+            epochs.append((int(match.group(1)), f))
+
+    if not epochs:
+        return None, 0
+
+    # Find the highest epoch number
+    latest_epoch, latest_file = max(epochs, key=lambda x: x[0])
+    return latest_file, latest_epoch
 
 def main():
 
@@ -17,23 +41,40 @@ def main():
     MODEL_PATH = "/home/jbu7511/Diffusion-from-scratch/conditional_ddpm_final_epoch.pth"
 
     T = 1000
-    
+
     if os.path.exists(MODEL_PATH):
         model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
         model.eval()
 
     else:
-        print("\nModel not found -starting training...\n")
+
+        latest_ckpt, last_epoch = get_latest_checkpoint()
+
+        if(latest_ckpt):
+            print(f"Resuming training from checkpoint: {latest_ckpt}")
+            model.load_state_dict(torch.load(latest_ckpt, map_location=device))
+            start_epoch = last_epoch + 1
+        else:
+            print("\nModel not found -starting training...\n")
 
         optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
         loss_fn = nn.MSELoss()
         BATCH_SIZE = 16
-        num_epochs = 20
-        
+        num_epochs = 200
 
+        
         train_loader, test_loader = data_loaders(BATCH_SIZE)
 
-        for epoch in range(num_epochs):
+        total_steps = num_epochs * len(train_loader)
+        
+        def linear_decay(step):
+            return 1 - min(step / total_steps, 1)
+
+        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=linear_decay)
+
+        global_step = 0
+
+        for epoch in range(start_epoch, num_epochs):
             print(f"Epoch: {epoch}")
             for x0, captions in train_loader:
                 x0 = x0.to(device)
@@ -53,6 +94,9 @@ def main():
                 loss.backward()
                 optimizer.step()
 
+                scheduler.step() 
+                global_step += 1
+
             print(f"Epoch {epoch}/{num_epochs} | Loss = {loss.item():.4f}")
             print("------------------------------------------------------------")
 
@@ -64,7 +108,7 @@ def main():
 
 
     print("Running inference...\n")
-    text_prompt = "giraffe is eating leaves from the tree"
+    text_prompt = "A man is standing"
 
     samples = sample_images_progress(
         model, T,
@@ -74,7 +118,7 @@ def main():
         text_prompt=text_prompt,
         guidance_scale=7.5,
     )
-    save_video(samples, T, fps=20)
+    save_video(samples,T,filename=text_prompt+".mp4", fps=20)
     print("\nInference complete. Video saved!")
 
 if __name__ == "__main__":
