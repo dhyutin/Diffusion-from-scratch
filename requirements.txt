@@ -1,1 +1,6 @@
 torch
+transformers
+datasets
+torchvision
+imageio
+imageio-ffmpeg

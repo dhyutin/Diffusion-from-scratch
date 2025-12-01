@@ -9,11 +9,12 @@ class SketchDataset(Dataset):
 
     def __len__(self):
         return len(self.ds)
-    
+
     def __getitem__(self, idx):
         img = self.ds[idx]['image']
+        text = self.ds[idx]['text']
         img = self.transform(img)
-        return img
+        return img, text
 
 
 def data_loaders(BATCH_SIZE):

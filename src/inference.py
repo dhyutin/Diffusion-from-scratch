@@ -8,7 +8,7 @@ device = "cuda"
 
 
 @torch.no_grad()
-def p_sample(model, x_t, t, T):
+def p_sample(model, x_t, t, T, text_prompt=None, guidance_scale=7.5):
     betas = torch.linspace(0.0001, 0.02, T).to(device)
     alphas = (1 - betas).to(device)
     alpha_bar = torch.cumprod(alphas, dim=0).to(device)
@@ -16,7 +16,15 @@ def p_sample(model, x_t, t, T):
     alpha_t = alphas[t]
     alpha_bar_t = alpha_bar[t]
 
-    eps_theta = model(x_t, torch.tensor([t], device=x_t.device).repeat(x_t.size(0)))
+    batch_size = x_t.size(0)
+    t_tensor = torch.tensor([t], device=x_t.device).repeat(batch_size)
+
+    if text_prompt is not None:
+        eps_cond = model(x_t, t_tensor, [text_prompt] * batch_size)
+        eps_uncond = model(x_t, t_tensor, [""] * batch_size)
+        eps_theta = eps_uncond + guidance_scale * (eps_cond - eps_uncond)
+    else:
+        eps_theta = model(x_t, t_tensor)
 
     coef1 = 1 / torch.sqrt(alpha_t)
     coef2 = beta_t / torch.sqrt(1 - alpha_bar_t)
@@ -29,16 +37,15 @@ def p_sample(model, x_t, t, T):
 
 
 @torch.no_grad()
-def sample_images_progress(model, T, num_images=1, img_size=64, save_every=10):
+def sample_images_progress(model, T, num_images=1, img_size=64, save_every=10, text_prompt=None, guidance_scale=7.5):
     x = torch.randn(num_images, 3, img_size, img_size).to(device)
 
-    all_samples = {} 
+    all_samples = {}
 
     for step in reversed(range(T)):
-        x = p_sample(model, x, step, T)
+        x = p_sample(model, x, step, T, text_prompt, guidance_scale)
 
         if step % save_every == 0 or step == 0:
-            # convert from [-1,1] to [0,1]
             x_vis = (x.clamp(-1, 1) + 1) / 2
             all_samples[step] = x_vis.clone().cpu()
 
