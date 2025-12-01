@@ -6,62 +6,76 @@ from src.inference import sample_images_progress, save_video
 import torch.nn as nn
 import torch
 import random
-
+import os
 
 def main():
 
     device = "cuda"
     model = UNet(in_channels=3, base_channels=64, time_dim=128).to(device)
-    model = nn.DataParallel(model)
+    # model = nn.DataParallel(model)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-    loss_fn = nn.MSELoss()
-    BATCH_SIZE = 16
-    num_epochs = 20
+    MODEL_PATH = "/home/jbu7511/Diffusion-from-scratch/conditional_ddpm_final_epoch.pth"
+
     T = 1000
+    
+    if os.path.exists(MODEL_PATH):
+        model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+        model.eval()
 
-    train_loader, test_loader = data_loaders(BATCH_SIZE)
+    else:
+        print("\nModel not found -starting training...\n")
 
-    print("Start Training")
+        optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+        loss_fn = nn.MSELoss()
+        BATCH_SIZE = 16
+        num_epochs = 20
+        
 
-    for epoch in range(num_epochs):
-        print(f"Epoch: {epoch}")
-        for x0, captions in train_loader:
-            x0 = x0.to(device)
+        train_loader, test_loader = data_loaders(BATCH_SIZE)
 
-            t = sample_time_steps(x0.size(0), T).to(device)
-            noise = torch.randn_like(x0)
-            x_t = forward_diffusion(x0, t, T, noise)
+        for epoch in range(num_epochs):
+            print(f"Epoch: {epoch}")
+            for x0, captions in train_loader:
+                x0 = x0.to(device)
 
-            if random.random() < 0.1:
-                captions = [""] * len(captions)
+                t = sample_time_steps(x0.size(0), T).to(device)
+                noise = torch.randn_like(x0)
+                x_t = forward_diffusion(x0, t, T, noise)
 
-            noise_pred = model(x_t, t, captions)
-            loss = loss_fn(noise_pred, noise)
+                # 10% probability 
+                if random.random() < 0.1:
+                    captions = [""] * len(captions)
 
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+                noise_pred = model(x_t, t, captions)
+                loss = loss_fn(noise_pred, noise)
 
-        print(f"Epoch: {epoch}/{num_epochs}, Loss: {loss.item()}")
-        print("-----------------------------------------------------------------\n\n")
-        if(epoch % 10 == 0):
-            torch.save(model.state_dict(), f"conditional_ddpm_epoch_{epoch}.pth")
-    torch.save(model.state_dict(), f"conditional_ddpm_final_epoch.pth")
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
 
-    print("Training Done\n Inference")
-    model.eval()
+            print(f"Epoch {epoch}/{num_epochs} | Loss = {loss.item():.4f}")
+            print("------------------------------------------------------------")
 
-    text_prompt = "a dog"
-    samples_dict = sample_images_progress(
+            if epoch % 10 == 0:
+                torch.save(model.state_dict(), f"conditional_ddpm_epoch_{epoch}.pth")
+
+        torch.save(model.state_dict(), MODEL_PATH)
+        print("\nTraining complete — model saved.\n")
+
+
+    print("Running inference...\n")
+    text_prompt = "giraffe is eating leaves from the tree"
+
+    samples = sample_images_progress(
         model, T,
         num_images=4,
         img_size=64,
         save_every=5,
         text_prompt=text_prompt,
-        guidance_scale=7.5
+        guidance_scale=7.5,
     )
-    save_video(samples_dict, T, fps=20)
+    save_video(samples, T, fps=20)
+    print("\nInference complete. Video saved!")
 
 if __name__ == "__main__":
     main()

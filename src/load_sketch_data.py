@@ -2,6 +2,9 @@ from torchvision import transforms
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 
+from torch.utils.data import Dataset
+from torch.utils.data import DataLoader
+
 class SketchDataset(Dataset):
     def __init__(self, ds, transform):
         self.ds = ds
@@ -9,12 +12,14 @@ class SketchDataset(Dataset):
 
     def __len__(self):
         return len(self.ds)
-
+    
     def __getitem__(self, idx):
         img = self.ds[idx]['image']
-        text = self.ds[idx]['text']
+        txt = self.ds[idx]['text']
         img = self.transform(img)
-        return img, text
+        return img, txt
+
+
 
 
 def data_loaders(BATCH_SIZE):
