@@ -37,17 +37,18 @@ def main():
     device = "cuda"
     model = UNet(in_channels=3, base_channels=64, time_dim=128).to(device)
     # model = nn.DataParallel(model)
-
-    MODEL_PATH = "/home/jbu7511/Diffusion-from-scratch/conditional_ddpm_final_epoch.pth"
+    
+    MODEL_PATH = "/home/jbu7511/Diffusion-from-scratch/conditional_ddpm_epoch_70.pth"
 
     T = 1000
+    
 
     if os.path.exists(MODEL_PATH):
         model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
         model.eval()
 
     else:
-
+        start_epoch = 0
         latest_ckpt, last_epoch = get_latest_checkpoint()
 
         if(latest_ckpt):
@@ -57,7 +58,7 @@ def main():
         else:
             print("\nModel not found -starting training...\n")
 
-        optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.00005)
         loss_fn = nn.MSELoss()
         BATCH_SIZE = 16
         num_epochs = 200
@@ -74,6 +75,7 @@ def main():
 
         global_step = 0
 
+        best_loss = 100000000000
         for epoch in range(start_epoch, num_epochs):
             print(f"Epoch: {epoch}")
             for x0, captions in train_loader:
@@ -89,6 +91,9 @@ def main():
 
                 noise_pred = model(x_t, t, captions)
                 loss = loss_fn(noise_pred, noise)
+                if loss < best_loss:
+                    best_loss = loss
+                    torch.save(model.state_dict(), f"best_model.pth")
 
                 optimizer.zero_grad()
                 loss.backward()
