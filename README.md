@@ -24,6 +24,3 @@ change the hyperparameter as per your wish and run:
 python main.py
 ```
 
----
-# Sample Output
-check https://github.com/dhyutin/Diffusion-from-scratch/blob/main/ddpm_samples.mp4
