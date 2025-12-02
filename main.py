@@ -38,7 +38,7 @@ def main():
     model = UNet(in_channels=3, base_channels=64, time_dim=128).to(device)
     # model = nn.DataParallel(model)
     
-    MODEL_PATH = "/home/jbu7511/Diffusion-from-scratch/conditional_ddpm_epoch_70.pth"
+    MODEL_PATH = "/home/jbu7511/Diffusion-from-scratch/conditional_ddpm_epoch_1000.pth"
 
     T = 1000
     
@@ -58,10 +58,10 @@ def main():
         else:
             print("\nModel not found -starting training...\n")
 
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.00005)
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
         loss_fn = nn.MSELoss()
         BATCH_SIZE = 16
-        num_epochs = 200
+        num_epochs = 2000
 
         
         train_loader, test_loader = data_loaders(BATCH_SIZE)
@@ -105,7 +105,7 @@ def main():
             print(f"Epoch {epoch}/{num_epochs} | Loss = {loss.item():.4f}")
             print("------------------------------------------------------------")
 
-            if epoch % 10 == 0:
+            if epoch % 100 == 0:
                 torch.save(model.state_dict(), f"conditional_ddpm_epoch_{epoch}.pth")
 
         torch.save(model.state_dict(), MODEL_PATH)
@@ -113,7 +113,7 @@ def main():
 
 
     print("Running inference...\n")
-    text_prompt = "A man is standing"
+    text_prompt = "A giraffe is standing in a zoo"
 
     samples = sample_images_progress(
         model, T,
