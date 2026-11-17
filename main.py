@@ -38,7 +38,12 @@ def main():
     model = UNet(in_channels=3, base_channels=64, time_dim=128).to(device)
     # model = nn.DataParallel(model)
     
-    MODEL_PATH = "/home/jbu7511/Diffusion-from-scratch/conditional_ddpm_epoch_1000.pth"
+    # Resolve relative to this file so it works from any working directory.
+    # Override with the MODEL_PATH environment variable if desired.
+    MODEL_PATH = os.environ.get(
+        "MODEL_PATH",
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "conditional_ddpm_epoch_1000.pth"),
+    )
 
     T = 1000
     
