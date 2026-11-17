@@ -2,11 +2,20 @@ import torch
 import matplotlib.pyplot as plt
 import torchvision.utils as vutils
 
-# Move all vars to GPU
-device = "cuda"
+
+def get_device():
+    if torch.cuda.is_available():
+        return "cuda"
+    if torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
+
+
+# Auto-select the best available device (CUDA > Apple MPS > CPU)
+device = get_device()
 
 def sample_time_steps(batchsize, T):
-    return torch.randint(0, T, (batchsize, ), device="cuda")
+    return torch.randint(0, T, (batchsize, ), device=device)
 
 # forward process
 

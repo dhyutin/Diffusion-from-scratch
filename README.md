@@ -103,26 +103,42 @@ Dependencies: `torch`, `torchvision`, `transformers`, `datasets`, `imageio`, `im
 
 ## Usage
 
-Training runs on CUDA. Edit the hyperparameters near the top of `main.py` (`BATCH_SIZE`, `num_epochs`, `T`, learning rate, `MODEL_PATH`), then:
+`main.py` has two modes selected with `--mode`. The device is auto-detected (CUDA → Apple MPS → CPU), so no edits are needed to run on a laptop.
+
+### Inference (default)
+
+Generate a reverse-diffusion video from a prompt using a trained checkpoint:
 
 ```bash
-python main.py
+python main.py --mode infer \
+  --checkpoint conditional_ddpm_epoch_1000.pth \
+  --prompt "A giraffe is standing in a zoo" \
+  --guidance-scale 7.5
 ```
 
-- If a checkpoint exists at `MODEL_PATH`, it loads and runs **inference** only.
-- Otherwise it **trains** (resuming from the latest `conditional_ddpm_epoch_*.pth` if present), saving checkpoints every 100 epochs, and generates a sample video at the end.
+This writes `<prompt>.mp4` (noise → sketch) to the current directory. The checkpoint can also be set via the `MODEL_PATH` environment variable instead of `--checkpoint`.
 
-To generate from your own prompt, change `text_prompt` in `main.py`:
+### Training
 
-```python
-text_prompt = "A giraffe is standing in a zoo"
-samples = sample_images_progress(model, T, num_images=4, img_size=64,
-                                 save_every=5, text_prompt=text_prompt,
-                                 guidance_scale=7.5)
-save_video(samples, T, filename=text_prompt + ".mp4", fps=20)
+```bash
+python main.py --mode train \
+  --epochs 2000 \
+  --batch-size 16 \
+  --checkpoint conditional_ddpm_epoch_1000.pth
 ```
 
-> **Note:** the device is currently hardcoded to `"cuda"`. Running on CPU/Apple-Silicon (MPS) requires swapping those out.
+Training resumes from the latest `conditional_ddpm_epoch_*.pth` in the current directory if present, saves `best_model.pth` as loss improves, checkpoints every 100 epochs, writes the final model to `--checkpoint`, and then runs a sample inference.
+
+### All options
+
+| Flag | Default | Description |
+|---|---|---|
+| `--mode` | `infer` | `train` or `infer` |
+| `--checkpoint` | `conditional_ddpm_epoch_1000.pth` (or `$MODEL_PATH`) | checkpoint to load/save |
+| `--epochs` | `2000` | training epochs |
+| `--batch-size` | `16` | training batch size |
+| `--prompt` | `"A giraffe is standing in a zoo"` | inference prompt |
+| `--guidance-scale` | `7.5` | classifier-free guidance strength |
 
 ---
 

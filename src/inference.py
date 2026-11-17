@@ -4,7 +4,16 @@ import numpy as np
 from torchvision.utils import make_grid
 
 
-device = "cuda"
+def get_device():
+    if torch.cuda.is_available():
+        return "cuda"
+    if torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
+
+
+# Auto-select the best available device (CUDA > Apple MPS > CPU)
+device = get_device()
 
 
 @torch.no_grad()
