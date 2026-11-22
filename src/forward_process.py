@@ -1,5 +1,4 @@
 import torch
-import matplotlib.pyplot as plt
 import torchvision.utils as vutils
 
 
@@ -38,6 +37,7 @@ def forward_diffusion(x0, t, T, noise=None):
 
 # Visualize
 def show_images(x):
+    import matplotlib.pyplot as plt
     grid = vutils.make_grid(x[:8], nrow=4, normalize=True, value_range=(-1,1))
     plt.figure(figsize=(6,6))
     plt.imshow(grid.permute(1, 2, 0).cpu().numpy())

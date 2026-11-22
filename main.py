@@ -3,6 +3,7 @@ from src.forward_process import sample_time_steps, forward_diffusion, show_image
 from src.reverse_process_architecture import ResBlock, UNet
 from src.load_sketch_data import data_loaders
 from src.inference import sample_images_progress, save_video
+from src.metrics import evaluate
 import torch.nn as nn
 import torch
 import random
@@ -131,8 +132,8 @@ def main():
     )
 
     parser = argparse.ArgumentParser(description="Conditional DDPM — train or run inference.")
-    parser.add_argument("--mode", choices=["train", "infer"], default="infer",
-                        help="train a model from scratch/checkpoint, or run inference.")
+    parser.add_argument("--mode", choices=["train", "infer", "eval"], default="infer",
+                        help="train a model, run inference, or compute metrics (FID/KID/IS).")
     parser.add_argument("--checkpoint", default=default_checkpoint,
                         help="path to load/save the model checkpoint (env: MODEL_PATH).")
     parser.add_argument("--epochs", type=int, default=2000, help="number of training epochs.")
@@ -141,6 +142,8 @@ def main():
                         help="text prompt used for inference.")
     parser.add_argument("--guidance-scale", type=float, default=7.5,
                         help="classifier-free guidance scale for inference.")
+    parser.add_argument("--num-samples", type=int, default=64,
+                        help="number of generated images used for metric evaluation.")
     args = parser.parse_args()
 
     device = get_device()
@@ -151,6 +154,16 @@ def main():
     if args.mode == "train":
         train(model, device, args.checkpoint, args.epochs, args.batch_size)
         infer(model, device, args.prompt, args.guidance_scale)
+    elif args.mode == "eval":
+        if not os.path.exists(args.checkpoint):
+            raise FileNotFoundError(
+                f"Checkpoint not found: {args.checkpoint}\n"
+                "Pass --checkpoint <path>, set MODEL_PATH, or run with --mode train first."
+            )
+        model.load_state_dict(torch.load(args.checkpoint, map_location=device))
+        model.eval()
+        evaluate(model, device, num_samples=args.num_samples,
+                 batch_size=args.batch_size, T=T, guidance_scale=args.guidance_scale)
     else:
         if not os.path.exists(args.checkpoint):
             raise FileNotFoundError(

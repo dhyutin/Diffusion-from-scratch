@@ -4,3 +4,7 @@ datasets
 torchvision
 imageio
 imageio-ffmpeg
+matplotlib
+torchmetrics
+torch-fidelity
+scipy
